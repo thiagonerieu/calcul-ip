@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard IPv4 Avançado</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: #151f32;
+            --card-inner: #0f172a;
+            --text-color: #f8fafc;
+            --text-muted: #64748b;
+            --green: #10b981;
+            --red: #ef4444;
+            --border: #1e293b;
+            --accent: #38bdf8;
+            --purple: #c084fc;
+            --orange: #f97316;
+            --yellow: #f59e0b;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            position: relative;
+        }
+
+        /* Seletor de Idioma Flutuante */
+        .lang-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: inline-block;
+            z-index: 100;
+        }
+
+        .lang-btn {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text-color);
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        .lang-btn:hover {
+            border-color: var(--accent);
+            background-color: var(--card-inner);
+        }
+
+        .lang-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        .lang-dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 45px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            min-width: 130px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        .lang-dropdown.show {
+            display: block;
+        }
+
+        .lang-option {
+            color: var(--text-color);
+            padding: 10px 15px;
+            text-decoration: none;
+            display: block;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            text-align: left;
+        }
+
+        .lang-option:hover {
+            background-color: var(--card-inner);
+            color: var(--accent);
+        }
+
+        h1 {
+            margin: 0 0 5px 0;
+            color: var(--text-color);
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        p {
+            margin: 0 0 25px 0;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            text-align: center;
+        }
+
+        /* Container Principal do Dashboard */
+        .dashboard-container {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 800px;
+            box-sizing: border-box;
+        }
+
+        /* Área de Input do IP */
+        .input-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background-color: var(--card-inner);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 25px;
+        }
+
+        .octet-input {
+            width: 70px;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent);
+            background: transparent;
+            border: none;
+            text-align: center;
+            outline: none;
+            font-family: monospace;
+        }
+
+        .ip-dot {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .cidr-select {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--purple);
+            background: #1e293b;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 2px 5px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .btn-reset {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-color);
+            background-color: #1e293b;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 16px;
+            margin-left: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-reset:hover {
+            background-color: var(--red);
+            border-color: #ef4444;
+        }
+
+        /* Grid de Resultados */
+        .results-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Linhas Estilizadas como Cards Individuais */
+        .result-row {
+            display: grid;
+            grid-template-columns: 220px 140px 1fr;
+            align-items: center;
+            background-color: var(--card-inner);
+            padding: 12px 20px;
+            border-radius: 10px;
+            border-left: 4px solid var(--border);
+            font-family: monospace;
+            font-size: 1rem;
+        }
+
+        .result-row.row-ip { border-left-color: var(--accent); }
+        .result-row.row-mask { border-left-color: var(--purple); }
+        .result-row.row-idsr { border-left-color: var(--green); }
+        .result-row.row-wildcard { border-left-color: #ec4899; }
+        .result-row.row-brd { border-left-color: var(--orange); }
+
+        .label {
+            color: #94a3b8;
+            font-weight: 500;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .dec-val {
+            font-weight: 700;
+        }
+        .row-ip .dec-val { color: var(--accent); }
+        .row-mask .dec-val { color: var(--purple); }
+        .row-idsr .dec-val { color: var(--green); }
+        .row-wildcard .dec-val { color: #ec4899; }
+        .row-brd .dec-val { color: var(--orange); }
+
+        .bin-val {
+            color: #475569;
+            text-align: right;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .bin-val span {
+            color: var(--text-color);
+        }
+
+        /* Footer de Métricas */
+        .metrics-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-around;
+            background: linear-gradient(90deg, #1e1b4b, #0f172a);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #312e81;
+            font-weight: 600;
+            color: var(--yellow);
+        }
+
+        /* Painel Inferior (Chaves Binárias) */
+        .network-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .octet-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .octet-title {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .octet-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 12px;
+            background: var(--card-inner);
+            padding: 2px 12px;
+            border-radius: 6px;
+        }
+
+        .bits-grid { display: flex; gap: 8px; }
+        .bit-column { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .potency-label { font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 2px; }
+        
+        .radio-control { position: relative; width: 24px; height: 24px; cursor: pointer; }
+        .radio-control input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; z-index: 2; cursor: pointer; }
+        .design-indicator { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; background-color: #334155; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; color: #0f172a; transition: all 0.15s ease; z-index: 1; }
+        
+        .radio-control input.bit-1:checked + .design-indicator { background-color: var(--green); color: #fff; box-shadow: 0 0 8px var(--green); }
+        .radio-control input.bit-0:checked + .design-indicator { background-color: var(--red); color: #fff; box-shadow: 0 0 8px var(--red); }
+
+        .dot-separator { font-size: 2.5rem; font-weight: 700; color: var(--border); align-self: flex-end; margin-bottom: 15px; }
+
+        @media (max-width: 768px) {
+            .lang-container { position: static; margin-bottom: 15px; align-self: flex-end; }
+            .result-row { grid-template-columns: 1fr; gap: 4px; padding: 12px; }
+            .bin-val { text-align: left; margin-top: 2px; }
+            .dot-separator { display: none; }
+            .network-container { flex-direction: column; }
+            .metrics-footer { flex-direction: column; gap: 8px; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="lang-container">
+        <button class="lang-btn" id="langBtn" onclick="toggleLangMenu(event)">
+            <svg viewBox="0 0 24 24">
+                <path d="M12.003 21.997c-5.514 0-10-4.486-10-10s4.486-10 10-10s10 4.486 10 10s-4.486 10-10 10zm0-18c-4.411 0-8 3.589-8 8s3.589 8 8 8s8-3.589 8-8s-3.589-8-8-8zm-.553 13.947l-3-2a1.002 1.002 0 0 1-.395-1.106l1-3A1 1 0 0 1 10 10h2V8a1 1 0 0 1 2 0v3a1 1 0 0 1-1 1h-2.134l-.6 1.8l1.83.619a1 1 0 0 1 .139 1.748l-1.319.88zM16 14c-.552 0-1-.448-1-1v-1.5c0-.276-.224-.5-.5-.5h-1c-.276 0-.5.224-.5.5V13c0 .552-.448 1-1 1s-1-.448-1-1v-2.5c0-1.378 1.122-2.5 2.5-2.5h1c1.378 0 2.5 1.122 2.5 2.5V13c0 .552-.448 1-1 1z"/>
+            </svg>
+        </button>
+        <div class="lang-dropdown" id="langDropdown">
+            <div class="lang-option" onclick="changeLanguage('pt')">Português</div>
+            <div class="lang-option" onclick="changeLanguage('en')">English</div>
+            <div class="lang-option" onclick="changeLanguage('fr')">Français</div>
+            <div class="lang-option" onclick="changeLanguage('es')">Español</div>
+            <div class="lang-option" onclick="changeLanguage('it')">Italiano</div>
+        </div>
+    </div>
+
+    <h1 id="main-title">Dashboard IPv4 Avançado</h1>
+    <p id="main-subtitle">Simulador didático de endereçamento binário e cálculo de sub-redes</p>
+
+    <div class="dashboard-container">
+        <div class="input-section">
+            <input type="number" id="input-o1" class="octet-input" value="176" min="0" max="255" oninput="decimalToBinary(1)">
+            <span class="ip-dot">.</span>
+            <input type="number" id="input-o2" class="octet-input" value="149" min="0" max="255" oninput="decimalToBinary(2)">
+            <span class="ip-dot">.</span>
+            <input type="number" id="input-o3" class="octet-input" value="95" min="0" max="255" oninput="decimalToBinary(3)">
+            <span class="ip-dot">.</span>
+            <input type="number" id="input-o4" class="octet-input" value="29" min="0" max="255" oninput="decimalToBinary(4)">
+            
+            <select id="cidr-select" class="cidr-select" onchange="calculateSubnet()"></select>
+            <button class="btn-reset" id="btn-reset-text" onclick="resetIp()">Zerar</button>
+        </div>
+
+        <div class="results-grid">
+            <div class="result-row row-ip">
+                <span class="label" id="lbl-ip">Endereço IP:</span>
+                <span class="dec-val" id="ip-decimal">0.0.0.0</span>
+                <span class="bin-val" id="ip-binary">00000000.00000000.00000000.00000000</span>
+            </div>
+            
+            <div class="result-row row-mask">
+                <span class="label" id="lbl-mask">Máscara de Sub-rede:</span>
+                <span class="dec-val" id="mask-decimal">0.0.0.0</span>
+                <span class="bin-val" id="mask-binary">00000000.00000000.00000000.00000000</span>
+            </div>
+
+            <div class="result-row row-idsr">
+                <span class="label" id="lbl-idsr">IDSR (Rede):</span>
+                <span class="dec-val" id="idsr-decimal">0.0.0.0</span>
+                <span class="bin-val" id="idsr-binary">00000000.00000000.00000000.00000000</span>
+            </div>
+
+            <div class="result-row row-wildcard">
+                <span class="label" id="lbl-wildcard">Máscara Wildcard:</span>
+                <span class="dec-val" id="mask-brd-decimal">0.0.0.0</span>
+                <span class="bin-val" id="mask-brd-binary">00000000.00000000.00000000.00000000</span>
+            </div>
+
+            <div class="result-row row-brd">
+                <span class="label" id="lbl-brd">BRD (Broadcast):</span>
+                <span class="dec-val" id="brd-decimal">0.0.0.0</span>
+                <span class="bin-val" id="brd-binary">00000000.00000000.00000000.00000000</span>
+            </div>
+        </div>
+
+        <div class="metrics-footer">
+            <span id="total-ips">IPs Totais: 0</span>
+            <span id="usable-ips">IPs Utilizáveis: 0</span>
+        </div>
+    </div>
+
+    <div class="network-container" id="panel"></div>
+
+    <script>
+        const panel = document.getElementById('panel');
+        const cidrSelect = document.getElementById('cidr-select');
+        const potencies = [128, 64, 32, 16, 8, 4, 2, 1];
+        let currentLang = 'pt';
+
+        // Base de dados das Traduções
+        const i18n = {
+            pt: {
+                title: "Dashboard IPv4 Avançado",
+                subtitle: "Simulador didático de endereçamento binário e cálculo de sub-redes",
+                reset: "Zerar",
+                ip: "Endereço IP:",
+                mask: "Máscara de Sub-rede:",
+                idsr: "IDSR (Rede):",
+                wildcard: "Máscara Wildcard:",
+                brd: "BRD (Broadcast):",
+                total: "IPs Totais: ",
+                usable: "IPs Utilizáveis: ",
+                octet: "º Octeto"
+            },
+            en: {
+                title: "Advanced IPv4 Dashboard",
+                subtitle: "Didactic simulator for binary addressing and subnet calculation",
+                reset: "Reset",
+                ip: "IP Address:",
+                mask: "Subnet Mask:",
+                idsr: "IDSR (Network):",
+                wildcard: "Wildcard Mask:",
+                brd: "BRD (Broadcast):",
+                total: "Total IPs: ",
+                usable: "Usable IPs: ",
+                octet: "st Octet" // Tratar simplificado via JS
+            },
+            fr: {
+                title: "Tableau de Bord IPv4 Avancé",
+                subtitle: "Simulateur didactique d'adressage binaire et de calcul de sous-réseau",
+                reset: "Effacer",
+                ip: "Adresse IP:",
+                mask: "Masque de Sous-réseau:",
+                idsr: "IDSR (Réseau):",
+                wildcard: "Masque Wildcard:",
+                brd: "BRD (Broadcast):",
+                total: "Total des IP: ",
+                usable: "IP Utiles: ",
+                octet: "e Octet"
+            },
+            es: {
+                title: "Dashboard IPv4 Avanzado",
+                subtitle: "Simulador didáctico de direccionamiento binario y cálculo de subredes",
+                reset: "Resetear",
+                ip: "Dirección IP:",
+                mask: "Máscara de Subred:",
+                idsr: "IDSR (Red):",
+                wildcard: "Máscara Wildcard:",
+                brd: "BRD (Broadcast):",
+                total: "IPs Totales: ",
+                usable: "IPs Utilizables: ",
+                octet: "º Octeto"
+            },
+            it: {
+                title: "Dashboard IPv4 Avanzata",
+                subtitle: "Simulatore didattico di indirizzamento binario e calcolo delle sottoreti",
+                reset: "Azzera",
+                ip: "Indirizzo IP:",
+                mask: "Maschera di Sottorete:",
+                idsr: "IDSR (Rete):",
+                wildcard: "Maschera Wildcard:",
+                brd: "BRD (Broadcast):",
+                total: "IP Totali: ",
+                usable: "IP Utilizzabili: ",
+                octet: "º Ottetto"
+            }
+        };
+
+        function toggleLangMenu(e) {
+            e.stopPropagation();
+            document.getElementById('langDropdown').classList.toggle('show');
+        }
+
+        function changeLanguage(lang) {
+            currentLang = lang;
+            document.getElementById('langDropdown').classList.remove('show');
+            
+            // Traduz textos estáticos
+            document.getElementById('main-title').innerText = i18n[lang].title;
+            document.getElementById('main-subtitle').innerText = i18n[lang].subtitle;
+            document.getElementById('btn-reset-text').innerText = i18n[lang].reset;
+            document.getElementById('lbl-ip').innerText = i18n[lang].ip;
+            document.getElementById('lbl-mask').innerText = i18n[lang].mask;
+            document.getElementById('lbl-idsr').innerText = i18n[lang].idsr;
+            document.getElementById('lbl-wildcard').innerText = i18n[lang].wildcard;
+            document.getElementById('lbl-brd').innerText = i18n[lang].brd;
+
+            // Traduz os títulos das caixas dos octetos
+            for (let o = 1; o <= 4; o++) {
+                let suffix = i18n[lang].octet;
+                if(lang === 'en') {
+                    suffix = (o === 1) ? "st Octet" : (o === 2) ? "nd Octet" : (o === 3) ? "rd Octet" : "th Octet";
+                    document.getElementById(`title-o${o}`).innerText = suffix;
+                } else {
+                    document.getElementById(`title-o${o}`).innerText = `${o}${suffix}`;
+                }
+            }
+            
+            calculateSubnet();
+        }
+
+        // Fecha o menu de idiomas se clicar fora dele
+        window.onclick = function() {
+            document.getElementById('langDropdown').classList.remove('show');
+        }
+
+        function highlightBits(str, count) {
+            let pureBits = str.replace(/\./g, '');
+            let res = '';
+            for(let i=0; i<32; i++) {
+                if(i < count) res += `<span>${pureBits[i]}</span>`;
+                else res += pureBits[i];
+                if((i+1)%8===0 && i<31) res += '.';
+            }
+            return res;
+        }
+
+        function highlightInverseBits(str, count) {
+            let pureBits = str.replace(/\./g, '');
+            let res = '';
+            for(let i=0; i<32; i++) {
+                if(i >= count) res += `<span>${pureBits[i]}</span>`;
+                else res += pureBits[i];
+                if((i+1)%8===0 && i<31) res += '.';
+            }
+            return res;
+        }
+
+        function octetToBinStr(num) { return num.toString(2).padStart(8, '0'); }
+
+        // Popula CIDR
+        for (let i = 1; i <= 32; i++) {
+            let opt = document.createElement('option');
+            opt.value = i; opt.textContent = `/${i}`;
+            if (i === 28) opt.selected = true;
+            cidrSelect.appendChild(opt);
+        }
+
+        // Monta os painéis de octetos
+        for (let o = 1; o <= 4; o++) {
+            let octetHtml = `<div class="octet-card"><div class="octet-title" id="title-o${o}">${o}º Octeto</div><div class="octet-value" id="card-val-o${o}">0</div><div class="bits-grid">`;
+            for (let b = 0; b < 8; b++) {
+                let pValue = potencies[b];
+                octetHtml += `
+                    <div class="bit-column">
+                        <div class="potency-label">${pValue}</div>
+                        <label class="radio-control">
+                            <input type="radio" name="oct${o}-bit${b}" id="oct${o}-b${b}-1" class="bit-1" value="${pValue}" onchange="binaryToDecimal()">
+                            <span class="design-indicator">1</span>
+                        </label>
+                        <label class="radio-control">
+                            <input type="radio" name="oct${o}-bit${b}" id="oct${o}-b${b}-0" class="bit-0" value="0" checked onchange="binaryToDecimal()">
+                            <span class="design-indicator">0</span>
+                        </label>
+                    </div>`;
+            }
+            octetHtml += `</div></div>`;
+            panel.innerHTML += octetHtml;
+            if (o < 4) panel.innerHTML += `<div class="dot-separator">.</div>`;
+        }
+
+        function binaryToDecimal() {
+            for (let o = 1; o <= 4; o++) {
+                let octetSum = 0;
+                for (let b = 0; b < 8; b++) {
+                    const activeRadio = document.querySelector(`input[name="oct${o}-bit${b}"]:checked`);
+                    if (activeRadio) octetSum += parseInt(activeRadio.value);
+                }
+                document.getElementById(`card-val-o${o}`).innerText = octetSum;
+                document.getElementById(`input-o${o}`).value = octetSum;
+            }
+            calculateSubnet();
+        }
+
+        function decimalToBinary(octetNum) {
+            let inputElement = document.getElementById(`input-o${octetNum}`);
+            let val = parseInt(inputElement.value);
+            if (isNaN(val) || val < 0) { val = 0; inputElement.value = 0; }
+            if (val > 255) { val = 255; inputElement.value = 255; }
+            document.getElementById(`card-val-o${octetNum}`).innerText = val;
+            let remainder = val;
+            for (let b = 0; b < 8; b++) {
+                let pValue = potencies[b];
+                if (remainder >= pValue) {
+                    document.getElementById(`oct${octetNum}-b${b}-1`).checked = true;
+                    remainder -= pValue;
+                } else {
+                    document.getElementById(`oct${octetNum}-b${b}-0`).checked = true;
+                }
+            }
+            calculateSubnet();
+        }
+
+        function resetIp() {
+            for (let o = 1; o <= 4; o++) {
+                document.getElementById(`input-o${o}`).value = 0;
+                decimalToBinary(o);
+            }
+        }
+
+        function calculateSubnet() {
+            const cidr = parseInt(cidrSelect.value);
+            const ip = [
+                parseInt(document.getElementById('input-o1').value) || 0,
+                parseInt(document.getElementById('input-o2').value) || 0,
+                parseInt(document.getElementById('input-o3').value) || 0,
+                parseInt(document.getElementById('input-o4').value) || 0
+            ];
+
+            let maskDec = [0, 0, 0, 0];
+            let maskBrd = [0, 0, 0, 0];
+            for (let i = 0; i < 32; i++) {
+                if (i < cidr) {
+                    maskDec[Math.floor(i / 8)] += potencies[i % 8];
+                }
+            }
+
+            let idsr = [0, 0, 0, 0];
+            let brd = [0, 0, 0, 0];
+            for (let j = 0; j < 4; j++) {
+                maskBrd[j] = 255 - maskDec[j];
+                idsr[j] = ip[j] & maskDec[j];
+                brd[j] = idsr[j] | maskBrd[j];
+            }
+
+            let totalIps = Math.pow(2, 32 - cidr);
+            let usableIps = (cidr === 31) ? 2 : (cidr === 32) ? 1 : totalIps - 2;
+
+            // Renderização dinâmica respeitando o idioma selecionado
+            document.getElementById('ip-decimal').innerText = ip.join('.');
+            document.getElementById('ip-binary').innerHTML = highlightBits(ip.map(octetToBinStr).join('.'), cidr);
+
+            document.getElementById('mask-decimal').innerText = maskDec.join('.');
+            document.getElementById('mask-binary').innerHTML = highlightBits(maskDec.map(octetToBinStr).join('.'), cidr);
+
+            document.getElementById('idsr-decimal').innerText = idsr.join('.');
+            document.getElementById('idsr-binary').innerHTML = highlightBits(idsr.map(octetToBinStr).join('.'), cidr);
+
+            document.getElementById('mask-brd-decimal').innerText = maskBrd.join('.');
+            document.getElementById('mask-brd-binary').innerHTML = highlightInverseBits(maskBrd.map(octetToBinStr).join('.'), cidr);
+
+            document.getElementById('brd-decimal').innerText = brd.join('.');
+            document.getElementById('brd-binary').innerHTML = highlightInverseBits(brd.map(octetToBinStr).join('.'), cidr);
+
+            document.getElementById('total-ips').innerText = `${i18n[currentLang].total}${totalIps.toLocaleString(currentLang)}`;
+            document.getElementById('usable-ips').innerText = `${i18n[currentLang].usable}${usableIps.toLocaleString(currentLang)}`;
+        }
+
+        // Inicialização
+        for (let o = 1; o <= 4; o++) { decimalToBinary(o); }
+        changeLanguage('pt'); // Língua padrão inicial
+    </script>
+</body>
+</html>
