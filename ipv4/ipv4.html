@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculateur binaire IPv4</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --green-active: #22c55e;
+            --red-inactive: #ef4444;
+            --border-color: #334155;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            margin-bottom: 5px;
+            color: #38bdf8;
+        }
+
+        p {
+            margin-top: 0;
+            margin-bottom: 30px;
+            color: #94a3b8;
+        }
+
+        /* Display do IP Decimal */
+        .ip-display {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background-color: #020617;
+            padding: 15px 30px;
+            border-radius: 12px;
+            border: 2px solid #38bdf8;
+            margin-bottom: 40px;
+            letter-spacing: 2px;
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+        }
+
+        .ip-display span {
+            color: #38bdf8;
+        }
+
+        /* Container dos Octetos */
+        .network-container {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* Bloco de cada Octeto */
+        .octet-card {
+            background-color: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .octet-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #cbd5e1;
+        }
+
+        .octet-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #e2e8f0;
+            margin-bottom: 15px;
+            background: #0f172a;
+            padding: 2px 15px;
+            border-radius: 6px;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        /* Grid dos Bits */
+        .bits-grid {
+            display: flex;
+            gap: 12px;
+        }
+
+        .bit-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .potency-label {
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+
+        /* Customização dos Inputs Radio */
+        .radio-control {
+            position: relative;
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+        }
+
+        .radio-control input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            z-index: 2;
+        }
+
+        /* O visual falso do botão de rádio (Custom Checkmark) */
+        .design-indicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: #475569;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #1e293b;
+            transition: all 0.2s ease;
+            z-index: 1;
+        }
+
+        /* Comportamento quando selecionado */
+        /* Estado UP (Bit 1) - Verde */
+        .radio-control input.bit-1:checked + .design-indicator {
+            background-color: var(--green-active);
+            color: #fff;
+            box-shadow: 0 0 10px var(--green-active);
+        }
+
+        /* Estado DOWN (Bit 0) - Vermelho */
+        .radio-control input.bit-0:checked + .design-indicator {
+            background-color: var(--red-inactive);
+            color: #fff;
+            box-shadow: 0 0 10px var(--red-inactive);
+        }
+
+        /* Divisor de octeto (Ponto) */
+        .dot-separator {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #38bdf8;
+            align-self: flex-end;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .dot-separator {
+                display: none;
+            }
+            .network-container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Calculateur binaire IPv4</h1>
+    <p>Cochez (1) pour additionner les puissances de 2 ou décochez (0) pour remettre à zéro.</p>
+
+    <div class="ip-display">
+        <span id="res-o1">0</span>.<span id="res-o2">0</span>.<span id="res-o3">0</span>.<span id="res-o4">0</span>
+    </div>
+
+    <div class="network-container" id="panel">
+        </div>
+
+    <script>
+        const panel = document.getElementById('panel');
+        const potencies = [128, 64, 32, 16, 8, 4, 2, 1];
+
+        // Função para gerar o HTML dos 4 octetos de forma limpa
+        for (let o = 1; o <= 4; o++) {
+            let octetHtml = `
+                <div class="octet-card">
+                    <div class="octet-title">${o}º Octeto</div>
+                    <div class="octet-value" id="val-o${o}">0</div>
+                    <div class="bits-grid">
+            `;
+
+            for (let b = 0; b < 8; b++) {
+                let pValue = potencies[b];
+                octetHtml += `
+                    <div class="bit-column">
+                        <div class="potency-label">${pValue}</div>
+                        <label class="radio-control">
+                            <input type="radio" name="oct${o}-bit${b}" class="bit-1" value="${pValue}" onchange="updateCalculations()">
+                            <span class="design-indicator">1</span>
+                        </label>
+                        <label class="radio-control">
+                            <input type="radio" name="oct${o}-bit${b}" class="bit-0" value="0" checked onchange="updateCalculations()">
+                            <span class="design-indicator">0</span>
+                        </label>
+                    </div>
+                `;
+            }
+
+            octetHtml += `
+                    </div>
+                </div>
+            `;
+
+            panel.innerHTML += octetHtml;
+
+            // Adiciona o ponto separador entre os cards (exceto no último)
+            if (o < 4) {
+                panel.innerHTML += `<div class="dot-separator">.</div>`;
+            }
+        }
+
+        // Função que faz a matemática binária/decimal acontecer
+        function updateCalculations() {
+            for (let o = 1; o <= 4; o++) {
+                let octetSum = 0;
+                
+                // Varre os 8 bits do octeto atual
+                for (let b = 0; b < 8; b++) {
+                    const activeRadio = document.querySelector(`input[name="oct${o}-bit${b}"]:checked`);
+                    if (activeRadio) {
+                        octetSum += parseInt(activeRadio.value);
+                    }
+                }
+
+                // Atualiza o valor individual do card e o valor no IP principal do topo
+                document.getElementById(`val-o${o}`).innerText = octetSum;
+                document.getElementById(`res-o1`).innerText = document.getElementById('val-o1').innerText;
+                document.getElementById(`res-o2`).innerText = document.getElementById('val-o2').innerText;
+                document.getElementById(`res-o3`).innerText = document.getElementById('val-o3').innerText;
+                document.getElementById(`res-o4`).innerText = document.getElementById('val-o4').innerText;
+            }
+        }
+    </script>
+</body>
+</html>

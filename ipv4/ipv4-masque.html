@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Treinador IPv4 Bilateral & Máscara</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --green-active: #22c55e;
+            --red-inactive: #ef4444;
+            --border-color: #334155;
+            --accent-color: #38bdf8;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            margin-bottom: 5px;
+            color: var(--accent-color);
+        }
+
+        p {
+            margin-top: 0;
+            margin-bottom: 30px;
+            color: #94a3b8;
+            text-align: center;
+        }
+
+        /* Container do Display do IP e Máscara */
+        .display-container {
+            background-color: #020617;
+            padding: 25px 30px;
+            border-radius: 12px;
+            border: 2px solid var(--accent-color);
+            margin-bottom: 40px;
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .ip-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Inputs editáveis do IP */
+        .octet-input {
+            width: 75px;
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            background: #1e293b;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            text-align: center;
+            padding: 2px;
+            outline: none;
+            font-family: monospace;
+        }
+
+        .octet-input:focus {
+            border-color: var(--accent-color);
+            background: #0f172a;
+        }
+
+        /* Remover as setinhas padrão do input do tipo number */
+        .octet-input::-webkit-inner-spin-button, 
+        .octet-input::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+
+        .ip-dot {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        /* Seletor CIDR */
+        .cidr-select {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #e2e8f0;
+            background: #1e293b;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 5px;
+            margin-left: 10px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        /* Painel inferior com os detalhes da máscara */
+        .mask-panel {
+            width: 100%;
+            border-top: 1px solid var(--border-color);
+            padding-top: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            font-family: monospace;
+        }
+
+        .mask-text {
+            font-size: 1.1rem;
+            color: #cbd5e1;
+        }
+
+        .mask-binary {
+            font-size: 0.95rem;
+            color: #64748b;
+            letter-spacing: 1px;
+        }
+
+        .mask-binary span {
+            color: #a855f7; /* Roxo para destacar os bits 1 da máscara */
+            font-weight: bold;
+        }
+
+        /* Container dos Octetos */
+        .network-container {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* Bloco de cada Octeto */
+        .octet-card {
+            background-color: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .octet-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #cbd5e1;
+        }
+
+        .octet-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #e2e8f0;
+            margin-bottom: 15px;
+            background: #0f172a;
+            padding: 2px 15px;
+            border-radius: 6px;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        /* Grid dos Bits */
+        .bits-grid {
+            display: flex;
+            gap: 12px;
+        }
+
+        .bit-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .potency-label {
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+
+        /* Customização dos Inputs Radio */
+        .radio-control {
+            position: relative;
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+        }
+
+        .radio-control input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            z-index: 2;
+        }
+
+        .design-indicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: #475569;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #1e293b;
+            transition: all 0.2s ease;
+            z-index: 1;
+        }
+
+        .radio-control input.bit-1:checked + .design-indicator {
+            background-color: var(--green-active);
+            color: #fff;
+            box-shadow: 0 0 10px var(--green-active);
+        }
+
+        .radio-control input.bit-0:checked + .design-indicator {
+            background-color: var(--red-inactive);
+            color: #fff;
+            box-shadow: 0 0 10px var(--red-inactive);
+        }
+
+        /* Divisor de octeto visual */
+        .dot-separator {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            align-self: flex-end;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .dot-separator { display: none; }
+            .network-container { flex-direction: column; }
+            .ip-row { flex-wrap: wrap; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Treinador Bidirecional IPv4</h1>
+    <p>Altere os botões de rádio embaixo OU digite valores decimais (0-255) diretamente no IP do topo!</p>
+
+    <div class="display-container">
+        <div class="ip-row">
+            <input type="number" id="input-o1" class="octet-input" value="0" min="0" max="255" oninput="decimalToBinary(1)">
+            <span class="ip-dot">.</span>
+            <input type="number" id="input-o2" class="octet-input" value="0" min="0" max="255" oninput="decimalToBinary(2)">
+            <span class="ip-dot">.</span>
+            <input type="number" id="input-o3" class="octet-input" value="0" min="0" max="255" oninput="decimalToBinary(3)">
+            <span class="ip-dot">.</span>
+            <input type="number" id="input-o4" class="octet-input" value="0" min="0" max="255" oninput="decimalToBinary(4)">
+            
+            <select id="cidr-select" class="cidr-select" onchange="updateMaskCalculations()">
+                </select>
+        </div>
+
+        <div class="mask-panel">
+            <div class="mask-text" id="mask-decimal">Máscara Decimal: 255.255.255.0</div>
+            <div class="mask-binary" id="mask-binary">Máscara Binária: 11111111.11111111.11111111.00000000</div>
+        </div>
+    </div>
+
+    <div class="network-container" id="panel"></div>
+
+    <script>
+        const panel = document.getElementById('panel');
+        const cidrSelect = document.getElementById('cidr-select');
+        const potencies = [128, 64, 32, 16, 8, 4, 2, 1];
+
+        // 1. Popula o seletor CIDR (/1 a /32)
+        for (let i = 1; i <= 32; i++) {
+            let opt = document.createElement('option');
+            opt.value = i;
+            opt.textContent = `/${i}`;
+            if (i === 24) opt.selected = true;
+            cidrSelect.appendChild(opt);
+        }
+
+        // 2. Monta dinamicamente a estrutura visual dos 4 cartões de Octetos
+        for (let o = 1; o <= 4; o++) {
+            let octetHtml = `
+                <div class="octet-card">
+                    <div class="octet-title">${o}º Octeto</div>
+                    <div class="octet-value" id="card-val-o${o}">0</div>
+                    <div class="bits-grid">
+            `;
+
+            for (let b = 0; b < 8; b++) {
+                let pValue = potencies[b];
+                octetHtml += `
+                    <div class="bit-column">
+                        <div class="potency-label">${pValue}</div>
+                        <label class="radio-control">
+                            <input type="radio" name="oct${o}-bit${b}" id="oct${o}-b${b}-1" class="bit-1" value="${pValue}" onchange="binaryToDecimal()">
+                            <span class="design-indicator">1</span>
+                        </label>
+                        <label class="radio-control">
+                            <input type="radio" name="oct${o}-bit${b}" id="oct${o}-b${b}-0" class="bit-0" value="0" checked onchange="binaryToDecimal()">
+                            <span class="design-indicator">0</span>
+                        </label>
+                    </div>
+                `;
+            }
+
+            octetHtml += `</div></div>`;
+            panel.innerHTML += octetHtml;
+
+            if (o < 4) {
+                panel.innerHTML += `<div class="dot-separator">.</div>`;
+            }
+        }
+
+        // CAMINHO A: Chaves alteradas pelo usuário -> Atualiza o número Decimal lá em cima
+        function binaryToDecimal() {
+            for (let o = 1; o <= 4; o++) {
+                let octetSum = 0;
+                for (let b = 0; b < 8; b++) {
+                    const activeRadio = document.querySelector(`input[name="oct${o}-bit${b}"]:checked`);
+                    if (activeRadio) {
+                        octetSum += parseInt(activeRadio.value);
+                    }
+                }
+                document.getElementById(`card-val-o${o}`).innerText = octetSum;
+                document.getElementById(`input-o${o}`).value = octetSum;
+            }
+        }
+
+        // CAMINHO B: Input digitado pelo usuário -> Posiciona e acende as chaves corretas
+        function decimalToBinary(octetNum) {
+            let inputElement = document.getElementById(`input-o${octetNum}`);
+            let val = parseInt(inputElement.value);
+
+            // Filtro de segurança (limitar de 0 a 255)
+            if (isNaN(val) || val < 0) { val = 0; inputElement.value = 0; }
+            if (val > 255) { val = 255; inputElement.value = 255; }
+
+            document.getElementById(`card-val-o${octetNum}`).innerText = val;
+
+            // Decompõe o número decimal nas potências de 2 correspondentes
+            let remainder = val;
+            for (let b = 0; b < 8; b++) {
+                let pValue = potencies[b];
+                if (remainder >= pValue) {
+                    document.getElementById(`oct${octetNum}-b${b}-1`).checked = true;
+                    remainder -= pValue;
+                } else {
+                    document.getElementById(`oct${octetNum}-b${b}-0`).checked = true;
+                }
+            }
+        }
+
+        // CÁLCULO DA MÁSCARA (Decimal e Binário Realçado)
+        function updateMaskCalculations() {
+            const cidr = parseInt(cidrSelect.value);
+            let maskDecArr = [0, 0, 0, 0];
+            let maskBinArr = [];
+
+            // Gera a string binária e os blocos decimais baseados no CIDR
+            for (let i = 0; i < 32; i++) {
+                if (i < cidr) {
+                    let octetIndex = Math.floor(i / 8);
+                    let bitIndex = i % 8;
+                    maskDecArr[octetIndex] += potencies[bitIndex];
+                    maskBinArr.push('<span>1</span>');
+                } else {
+                    maskBinArr.push('0');
+                }
+
+                // Adiciona o ponto separador visual a cada 8 bits
+                if ((i + 1) % 8 === 0 && i < 31) {
+                    maskBinArr.push('.');
+                }
+            }
+
+            // Publica os resultados calculados nos displays correspondentes
+            document.getElementById('mask-decimal').innerText = `Máscara Decimal: ${maskDecArr.join('.')}`;
+            document.getElementById('mask-binary').innerHTML = `Máscara Binária: ${maskBinArr.join('')}`;
+        }
+
+        // Inicializa o estado dos cálculos da máscara ao carregar a página
+        updateMaskCalculations();
+    </script>
+</body>
+</html>
